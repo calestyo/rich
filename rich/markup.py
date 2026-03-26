@@ -70,6 +70,42 @@ def escape(
     return markup
 
 
+def unescape(
+    string: str,
+    _unescape: _EscapeSubMethod = re.compile(r"(\\*)(\[[a-z#/@][^[]*?])").sub,
+) -> str:
+    """Unescapes escaped markup.
+
+    Args:
+        sring (str): The escaped markup.
+
+    Raises:
+        MarkupError: If there is an escaping error in the escaped markup.
+
+    Returns:
+        str: The original markup.
+    """
+
+    def unescape_backslashes(match: Match[str]) -> str:
+        """Called by re.sub replace matches."""
+        backslashes, text = match.groups()
+        number_of_backslashes = len(backslashes)
+        if (number_of_backslashes-1) % 2 != 0:
+            raise ValueError("The value of the `string`-parameter was not correctly escaped.")
+        return f"{'\\' * ((number_of_backslashes-1) // 2)}{text}"
+
+    string_without_trailing_backslashes = string.rstrip("\\")
+    number_of_trailing_backslashes = len(string) - len(string_without_trailing_backslashes)
+    if number_of_trailing_backslashes % 2 != 0:
+        raise ValueError("The value of the `string`-parameter was not correctly escaped.")
+    if number_of_trailing_backslashes > 0:
+        string = string_without_trailing_backslashes + ("\\" * (number_of_trailing_backslashes // 2))
+
+    string = _unescape(unescape_backslashes, string)
+
+    return string
+
+
 def _parse(markup: str) -> Iterable[Tuple[int, Optional[str], Optional[Tag]]]:
     """Parse markup in to an iterable of tuples of (position, text, tag).
 
