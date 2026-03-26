@@ -106,6 +106,35 @@ def unescape(
     return string
 
 
+def strip(
+    markup: str,
+    _strip: _EscapeSubMethod = re.compile(r"(\\*)(\[[a-z#/@][^[]*?])").sub,
+) -> str:
+    """Strips off any unescaped markup.
+    Escaped markup is not stripped off.
+    This does not unescape the resulting string. In order to get the original raw string
+    from f"[red]{escape(raw)}[/red]}" one needs to call unescape(strip(f"…")).
+
+    Args:
+        markup (str): The markup.
+
+    Returns:
+        str: The plain string without any unescaped markup.
+    """
+
+    def strip_unescaped_markup(match: Match[str]) -> str:
+        """Called by re.sub replace matches."""
+        backslashes, text = match.groups()
+        number_of_backslashes = len(backslashes)
+        if number_of_backslashes % 2 == 0:
+            return backslashes[:-1]
+        return match.group(0)
+
+    markup = _strip(strip_unescaped_markup, markup)
+
+    return markup
+
+
 def _parse(markup: str) -> Iterable[Tuple[int, Optional[str], Optional[Tag]]]:
     """Parse markup in to an iterable of tuples of (position, text, tag).
 
